@@ -1,0 +1,107 @@
+{% extends "dashboard_base.html" %}
+{% from "macros.html" import status_badge, type_badge %}
+{% block title %}All Applications{% endblock %}
+{% block page_title %}All Applications{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{{ url_for('admin.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+<a href="{{ url_for('admin.manage_staff') }}" class="nav-item"><span class="nav-icon">👥</span> Manage Staff</a>
+<a href="{{ url_for('admin.manage_subjects') }}" class="nav-item"><span class="nav-icon">📚</span> Subjects</a>
+<a href="{{ url_for('admin.manage_cia_dates') }}" class="nav-item"><span class="nav-icon">📅</span> CIA Dates</a>
+<a href="{{ url_for('admin.all_applications') }}" class="nav-item active"><span class="nav-icon">📋</span> All Applications</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>📋 All Applications</h2>
+    <p>Complete record of all CIA retest applications.</p>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <select id="filterStatus" class="form-control" style="width:160px;" onchange="filterTable()">
+      <option value="">All Status</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+      <option value="pending">Pending</option>
+    </select>
+    <select id="filterType" class="form-control" style="width:160px;" onchange="filterTable()">
+      <option value="">All Types</option>
+      <option value="pre">Pre-Submission</option>
+      <option value="late">Late Submission</option>
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Total: {{ apps|length }} Applications</h3>
+  </div>
+  <div class="table-wrapper">
+    <table id="appsTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Student</th>
+          <th>Subject</th>
+          <th>Sem</th>
+          <th>CIA</th>
+          <th>Type</th>
+          <th>Submitted</th>
+          <th>Staff</th>
+          <th>Tutor</th>
+          <th>HOD</th>
+          <th>Coord.</th>
+          <th>Final</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in apps %}
+        <tr data-status="{{ app.final_status }}" data-type="{{ app.submission_type }}">
+          <td>{{ loop.index }}</td>
+          <td>
+            <div class="fw-bold">{{ app.student_name }}</div>
+            <div class="text-muted">{{ app.register_number }}</div>
+            <div style="font-size:11px;color:#9ca3af;">{{ app.student_email }}</div>
+          </td>
+          <td>
+            <div class="fw-bold" style="font-size:13px;">{{ app.subject.subject_name }}</div>
+            <div class="text-muted">{{ app.subject.subject_code }}</div>
+          </td>
+          <td>{{ app.semester }}</td>
+          <td><span class="badge badge-primary">CIA {{ app.cia_number }}</span></td>
+          <td>{{ type_badge(app.submission_type) }}</td>
+          <td style="font-size:12px;color:#6b7280;">{{ app.submitted_at.strftime('%d %b %Y') }}</td>
+          <td>{{ status_badge(app.staff_status) }}</td>
+          <td>{{ status_badge(app.tutor_status) }}</td>
+          <td>{{ status_badge(app.hod_status) }}</td>
+          <td>{{ status_badge(app.coordinator_status) }}</td>
+          <td>{{ status_badge(app.final_status) }}</td>
+          <td>
+            <a href="{{ url_for('admin.view_application', app_id=app.id) }}" class="btn btn-outline btn-sm">View</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="13" style="text-align:center;padding:40px;color:#9ca3af;">No applications found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterTable() {
+  const status = document.getElementById('filterStatus').value;
+  const type = document.getElementById('filterType').value;
+  document.querySelectorAll('#appsTable tbody tr').forEach(row => {
+    const rowStatus = row.dataset.status;
+    const rowType = row.dataset.type;
+    const statusMatch = !status || rowStatus === status;
+    const typeMatch = !type || rowType === type;
+    row.style.display = statusMatch && typeMatch ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

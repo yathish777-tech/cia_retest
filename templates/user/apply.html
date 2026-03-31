@@ -1,0 +1,217 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Apply for Retest{% endblock %}
+{% block page_title %}Apply for CIA Retest{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{{ url_for('user.dashboard') }}" class="nav-item">
+  <span class="nav-icon">🏠</span> Dashboard
+</a>
+<a href="{{ url_for('user.apply') }}" class="nav-item active">
+  <span class="nav-icon">➕</span> Apply for Retest
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>📝 CIA Retest Application Form</h2>
+    <p>Fill in all details carefully. The form will be routed to the appropriate authorities.</p>
+  </div>
+  <a href="{{ url_for('user.dashboard') }}" class="btn btn-outline">← Back</a>
+</div>
+
+<!-- Submission Type Guide -->
+<div class="card mb-4" style="margin-bottom:24px;">
+  <div class="card-body" style="padding:20px 24px;">
+    <div class="grid grid-2" style="gap:20px;">
+      <div style="padding:16px;background:#e8eaf6;border-radius:10px;border-left:4px solid #1a237e;">
+        <div style="font-weight:700;color:#1a237e;margin-bottom:6px;">📋 Pre-Submission Flow</div>
+        <div style="font-size:13px;color:#374151;">Subject Staff → Tutor → HOD → Coordinator</div>
+      </div>
+      <div style="padding:16px;background:#fff3e0;border-radius:10px;border-left:4px solid #f57c00;">
+        <div style="font-weight:700;color:#e65100;margin-bottom:6px;">⏰ Late Submission Flow</div>
+        <div style="font-size:13px;color:#374151;">Subject Staff → Tutor → Coordinator → HOD → Coordinator</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Application Details</h3>
+    <span class="badge badge-info">Fill all required fields</span>
+  </div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('user.apply') }}">
+      <!-- Student Info -->
+      <div style="background:#f0f4ff;border-radius:10px;padding:20px;margin-bottom:24px;">
+        <h4 style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:#1a237e;margin-bottom:16px;">👤 Student Information</h4>
+        <div class="grid grid-3" style="gap:16px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Register Number <span class="required">*</span></label>
+            <input type="text" name="register_number" class="form-control"
+              value="{{ current_user.register_number or '' }}" required placeholder="e.g. 22CSB001">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Student Name <span class="required">*</span></label>
+            <input type="text" name="student_name" class="form-control"
+              value="{{ current_user.name }}" required>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Email Address <span class="required">*</span></label>
+            <input type="email" name="student_email" class="form-control"
+              value="{{ current_user.email }}" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subject & Exam Info -->
+      <div style="background:#f8f9ff;border-radius:10px;padding:20px;margin-bottom:24px;">
+        <h4 style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:#1a237e;margin-bottom:16px;">📚 Subject & Exam Details</h4>
+        <div class="grid grid-2" style="gap:16px;">
+          <div class="form-group">
+            <label class="form-label">Select Semester <span class="required">*</span></label>
+            <select name="semester" class="form-control" required id="semesterSelect">
+              <option value="">-- Select Semester --</option>
+              {% for i in range(1,9) %}
+              <option value="{{ i }}">Semester {{ i }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Select Subject <span class="required">*</span></label>
+            <select name="subject_id" class="form-control" required id="subjectSelect" onchange="fetchStaff(this.value)">
+              <option value="">-- Select Subject --</option>
+              {% for s in subjects %}
+              <option value="{{ s.id }}" data-sem="{{ s.semester }}">{{ s.subject_name }} ({{ s.subject_code }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject Handling Staff <span class="required">*</span></label>
+            <select name="staff_id" class="form-control" required id="staffSelect">
+              <option value="">-- Auto-filled on subject select --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Select Tutor <span class="required">*</span></label>
+            <select name="tutor_id" class="form-control" required>
+              <option value="">-- Select Tutor --</option>
+              {% for t in tutors %}
+              <option value="{{ t.id }}">{{ t.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CIA Number (Which CIA you were absent) <span class="required">*</span></label>
+            <select name="cia_number" class="form-control" required>
+              <option value="">-- Select CIA --</option>
+              <option value="1">CIA - 1</option>
+              <option value="2">CIA - 2</option>
+              <option value="3">CIA - 3</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CIA Exam Date <span class="required">*</span></label>
+            <input type="date" name="cia_date" class="form-control" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reason -->
+      <div style="background:#f8f9ff;border-radius:10px;padding:20px;margin-bottom:24px;">
+        <h4 style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:#1a237e;margin-bottom:16px;">📝 Reason for Absence</h4>
+        <div class="form-group">
+          <label class="form-label">Reason Type <span class="required">*</span></label>
+          <div style="display:flex;gap:20px;margin-top:8px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:12px 20px;border:1.5px solid #e0e7ff;border-radius:8px;font-size:14px;font-weight:600;transition:all 0.2s;" onclick="selectReason('health_issues',this)">
+              <input type="radio" name="reason_type" value="health_issues" required style="display:none;"> 🤒 Health Issues
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:12px 20px;border:1.5px solid #e0e7ff;border-radius:8px;font-size:14px;font-weight:600;transition:all 0.2s;" onclick="selectReason('on_duty',this)">
+              <input type="radio" name="reason_type" value="on_duty" required style="display:none;"> 🏅 On Duty
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:12px 20px;border:1.5px solid #e0e7ff;border-radius:8px;font-size:14px;font-weight:600;transition:all 0.2s;" onclick="selectReason('others',this)" id="othersLabel">
+              <input type="radio" name="reason_type" value="others" required style="display:none;"> ✏️ Others
+            </label>
+          </div>
+        </div>
+        <div class="form-group" id="otherReasonGroup" style="display:none;">
+          <label class="form-label">Specify Reason <span class="required">*</span></label>
+          <textarea name="reason_detail" class="form-control" rows="3" placeholder="Please describe your reason in detail..." id="otherReasonText"></textarea>
+        </div>
+      </div>
+
+      <!-- Submission Type -->
+      <div style="background:#f8f9ff;border-radius:10px;padding:20px;margin-bottom:24px;">
+        <h4 style="font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:#1a237e;margin-bottom:16px;">📅 Submission Type</h4>
+        <div style="display:flex;gap:20px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:16px 24px;border:1.5px solid #e0e7ff;border-radius:10px;font-size:14px;font-weight:600;" onclick="selectType('pre',this)">
+            <input type="radio" name="submission_type" value="pre" checked style="display:none;"> 📋 Pre-Submission
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:16px 24px;border:1.5px solid #e0e7ff;border-radius:10px;font-size:14px;font-weight:600;" onclick="selectType('late',this)">
+            <input type="radio" name="submission_type" value="late" style="display:none;"> ⏰ Late Submission
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-lg">📤 Submit Application</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectReason(val, el) {
+  document.querySelectorAll('[onclick^="selectReason"]').forEach(l => {
+    l.style.borderColor = '#e0e7ff';
+    l.style.background = 'white';
+    l.style.color = '#374151';
+  });
+  el.style.borderColor = '#1a237e';
+  el.style.background = '#e8eaf6';
+  el.style.color = '#1a237e';
+  el.querySelector('input').checked = true;
+  document.getElementById('otherReasonGroup').style.display = val === 'others' ? 'block' : 'none';
+  if(val === 'others') {
+    document.getElementById('otherReasonText').required = true;
+  } else {
+    document.getElementById('otherReasonText').required = false;
+  }
+}
+
+function selectType(val, el) {
+  document.querySelectorAll('[onclick^="selectType"]').forEach(l => {
+    l.style.borderColor = '#e0e7ff';
+    l.style.background = 'white';
+  });
+  el.style.borderColor = '#1a237e';
+  el.style.background = '#e8eaf6';
+  el.querySelector('input').checked = true;
+}
+
+// Initialize pre-submission as selected
+document.addEventListener('DOMContentLoaded', () => {
+  const preLbl = document.querySelector('[onclick="selectType(\'pre\',this)"]');
+  if(preLbl) { preLbl.style.borderColor = '#1a237e'; preLbl.style.background = '#e8eaf6'; }
+});
+
+async function fetchStaff(subjectId) {
+  if(!subjectId) return;
+  try {
+    const res = await fetch(`/user/get_staff/${subjectId}`);
+    const data = await res.json();
+    const sel = document.getElementById('staffSelect');
+    sel.innerHTML = '';
+    if(data.staff_id) {
+      sel.innerHTML = `<option value="${data.staff_id}" selected>${data.staff_name}</option>`;
+    } else {
+      sel.innerHTML = '<option value="">No staff assigned</option>';
+    }
+  } catch(e) {}
+}
+</script>
+{% endblock %}

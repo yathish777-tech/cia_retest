@@ -1,0 +1,176 @@
+{% extends "dashboard_base.html" %}
+{% block title %}Manage Subjects{% endblock %}
+{% block page_title %}Subject Management{% endblock %}
+
+{% block sidebar_nav %}
+<a href="{{ url_for('admin.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+<a href="{{ url_for('admin.manage_staff') }}" class="nav-item"><span class="nav-icon">👥</span> Manage Staff</a>
+<a href="{{ url_for('admin.manage_subjects') }}" class="nav-item active"><span class="nav-icon">📚</span> Subjects</a>
+<a href="{{ url_for('admin.manage_cia_dates') }}" class="nav-item"><span class="nav-icon">📅</span> CIA Dates</a>
+<a href="{{ url_for('admin.all_applications') }}" class="nav-item"><span class="nav-icon">📋</span> All Applications</a>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>📚 Subject Management</h2>
+    <p>Add subjects and assign subject-handling staff.</p>
+  </div>
+  <button onclick="openModal('addSubjectModal')" class="btn btn-primary">+ Add Subject</button>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>All Subjects ({{ subjects|length }})</h3></div>
+  {% if subjects %}
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>#</th><th>Subject Name</th><th>Code</th><th>Semester</th><th>Department</th><th>Handling Staff</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for s in subjects %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><div class="fw-bold">{{ s.subject_name }}</div></td>
+          <td><span class="badge badge-secondary">{{ s.subject_code }}</span></td>
+          <td>Semester {{ s.semester }}</td>
+          <td>{{ s.department or '—' }}</td>
+          <td>
+            {% if s.staff %}
+            <div style="font-size:13px;">{{ s.staff.name }}</div>
+            <div style="font-size:11px;color:#9ca3af;">{{ s.staff.email }}</div>
+            {% else %}<span class="text-muted">Not assigned</span>{% endif %}
+          </td>
+          <td>{% if s.is_active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-danger">Inactive</span>{% endif %}</td>
+          <td>
+            <button onclick="openEditSubjectModal({{ s.id }},'{{ s.subject_name }}','{{ s.subject_code }}',{{ s.semester }},'{{ s.department or '' }}',{{ s.staff_id or 'null' }},{{ 'true' if s.is_active else 'false' }})"
+              class="btn btn-outline btn-sm">Edit</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:50px;">
+    <div class="icon">📚</div><h4>No Subjects Added</h4>
+    <p>Add subjects and assign staff to enable retest applications.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Subject Modal -->
+<div class="modal-overlay" id="addSubjectModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h3>➕ Add Subject</h3>
+      <span class="modal-close" onclick="closeModal('addSubjectModal')">✕</span>
+    </div>
+    <form method="POST" action="{{ url_for('admin.add_subject') }}">
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Subject Name <span class="required">*</span></label>
+          <input type="text" name="subject_name" class="form-control" required placeholder="e.g. Data Structures">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject Code <span class="required">*</span></label>
+          <input type="text" name="subject_code" class="form-control" required placeholder="e.g. CS2201">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester <span class="required">*</span></label>
+          <select name="semester" class="form-control" required>
+            {% for i in range(1,9) %}<option value="{{ i }}">Semester {{ i }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <select name="department" class="form-control">
+            <option value="">Select Dept.</option>
+            <option value="Computer Science">Computer Science</option>
+            <option value="Information Technology">IT</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Mechanical">Mechanical</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:span 2;">
+          <label class="form-label">Assign Subject Staff</label>
+          <select name="staff_id" class="form-control">
+            <option value="">-- Select Staff --</option>
+            {% for st in staff_list %}
+            <option value="{{ st.id }}">{{ st.name }} ({{ st.email }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+        <button type="button" onclick="closeModal('addSubjectModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary">✅ Add Subject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Subject Modal -->
+<div class="modal-overlay" id="editSubjectModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h3>✏️ Edit Subject</h3>
+      <span class="modal-close" onclick="closeModal('editSubjectModal')">✕</span>
+    </div>
+    <form method="POST" id="editSubjectForm">
+      <div class="grid grid-2" style="gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Subject Name</label>
+          <input type="text" name="subject_name" id="editSubName" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subject Code</label>
+          <input type="text" name="subject_code" id="editSubCode" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester</label>
+          <select name="semester" id="editSubSem" class="form-control">
+            {% for i in range(1,9) %}<option value="{{ i }}">Semester {{ i }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <input type="text" name="department" id="editSubDept" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assign Staff</label>
+          <select name="staff_id" id="editSubStaff" class="form-control">
+            <option value="">-- None --</option>
+            {% for st in staff_list %}
+            <option value="{{ st.id }}">{{ st.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Active</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer;">
+            <input type="checkbox" name="is_active" id="editSubActive"> Mark as Active
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px;">
+        <button type="button" onclick="closeModal('editSubjectModal')" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary">💾 Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEditSubjectModal(id, name, code, sem, dept, staffId, isActive) {
+  document.getElementById('editSubName').value = name;
+  document.getElementById('editSubCode').value = code;
+  document.getElementById('editSubSem').value = sem;
+  document.getElementById('editSubDept').value = dept;
+  document.getElementById('editSubStaff').value = staffId || '';
+  document.getElementById('editSubActive').checked = isActive === true || isActive === 'true';
+  document.getElementById('editSubjectForm').action = `/admin/subjects/edit/${id}`;
+  openModal('editSubjectModal');
+}
+</script>
+{% endblock %}

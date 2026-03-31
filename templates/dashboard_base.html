@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="brand-icon">📋</div>
+        <div class="brand-text">
+          <h2>CIA Retest</h2>
+          <span>Department Portal</span>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ current_user.name[0].upper() }}</div>
+      <div class="user-info">
+        <div class="uname">{{ current_user.name }}</div>
+        <div class="urole">{{ current_user.role.replace('_',' ').title() }}</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      {% block sidebar_nav %}{% endblock %}
+    </nav>
+    <div class="sidebar-footer">
+      <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color:rgba(255,255,255,0.6);">
+        <span class="nav-icon">🚪</span> Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+      <div class="topbar-actions">
+        <span class="badge badge-primary" style="font-size:12px;">
+          {{ current_user.role.replace('_',' ').title() }}
+        </span>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Logout</a>
+      </div>
+    </header>
+    <div class="page-content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock %}
