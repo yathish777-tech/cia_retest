@@ -6,7 +6,7 @@ load_dotenv()
 class Config:
     SECRET_KEY = 'cia-retest-secret-key-2024'
 
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:1234@localhost/cia_rf'
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:1234@localhost/ace_cia_rf'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # ✅ MAIL CONFIG (FIXED)
